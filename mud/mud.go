@@ -1,8 +1,9 @@
 package mud
 
 import (
-  "time"
   "fmt"
+  "time"
+  "bytes"
   "code.google.com/goconf"
 )
 
@@ -33,8 +34,62 @@ type MUDServer struct {
 // Validates provided ConfigFile for required entries and sets it as the config.
 // Returns non-nil error if errors have occured.
 func (server *MUDServer) SetConfig( config *conf.ConfigFile ) error {
-  server.config = config
+  if( server == nil ) {
+    return MUDServerError {
+      time.Now(),
+      "ConfigFile provided to SetConfig is nil!",
+    }
+  }
 
+  requiredFields := [...][3]string {
+    { "server", "port", "int" },
+    { "database", "host", "string" },
+    { "database", "user", "string" },
+    { "database", "password", "string" },
+    { "database", "database", "string" },
+  }
+
+  // Create slice to contain errors for fields.
+  fieldErrors := make( []error, len( requiredFields ) )
+
+  // Check required fields for errors
+  for _, y := range requiredFields {
+    var err error
+
+    if( y[2] == "int" ) {
+      _, err = config.GetInt( y[0], y[1] )
+    } else if( y[2] == "string" ) {
+      _, err = config.GetString( y[0], y[1] )
+    }
+
+    if( err != nil ) {
+      fieldErrors = append( fieldErrors, err )
+    }
+  }
+
+
+  // Loop trough errors and generate error message out of them.
+  if( len( fieldErrors ) > 0 ) {
+    var errorCount = 0
+    errorBuf := bytes.NewBufferString( "\n\tFollowing errors occured when checking fields of the configuration file:\n" )
+
+    for _, e := range fieldErrors {
+      if( e == nil ) {
+        continue
+      }
+      fmt.Fprintf( errorBuf, "\t - %s\n", e.Error() )
+      errorCount++
+    }
+
+    if( errorCount > 0 ) {
+      return MUDServerError {
+        time.Now(),
+        errorBuf.String(),
+      }
+    }
+  }
+
+  server.config = config
   return nil
 }
 
