@@ -2,6 +2,7 @@ package mud
 
 import (
   "fmt"
+  "net"
   "time"
   "bytes"
   "code.google.com/goconf"
@@ -26,6 +27,7 @@ func (e MUDServerError) Error() string {
 
 // The server itself. Before Starting it, it requires working config file.
 type MUDServer struct {
+  conn net.Listener
   config *conf.ConfigFile
 }
 
@@ -103,14 +105,28 @@ func (server *MUDServer) Start() error {
     }
   }
 
-  return MUDServerError {
-    time.Now(),
-    "Server startup failed. It's not yet written.",
+
+  // Get the port that we should start listening.
+  port, _ := server.config.GetInt( "server", "port" )
+
+  var err error
+
+  // Open the listening socket.
+  server.conn, err = net.Listen( "tcp", fmt.Sprintf( ":%d", port ) )
+  if( err != nil ) {
+    return MUDServerError {
+      time.Now(),
+      err.Error(),
+    }
   }
+
+  return nil
 }
 
 
 
+// Closes the server
 func (server *MUDServer) Close() {
+  server.conn.Close()
 }
 

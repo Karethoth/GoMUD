@@ -30,24 +30,17 @@ func StartServer( config *conf.ConfigFile ) (*mud.MUDServer, error) {
 
 func main() {
   fmt.Printf( "Reading configuration file..\n" )
+
   config, err := conf.ReadConfigFile( "server.conf" )
   if( err != nil ) {
     fmt.Printf( "Received error: %s\n", err.Error() )
     return
   }
 
-  port, err := config.GetInt( "server", "port" )
-  if( err != nil ) {
-    fmt.Printf( "Received error: %s\n", err.Error() )
-    return
-  }
-
-
   fmt.Printf( "Configuration file has been read succesfully.\n" )
-  fmt.Printf( "Starting server to port %d..\n", port )
+  fmt.Printf( "Starting the server..\n" )
 
   server, err := StartServer( config )
-
   if( err != nil ) {
     fmt.Printf( "Received error: %s\n", err.Error() )
     return
@@ -55,6 +48,7 @@ func main() {
 
   fmt.Printf( "Server started succesfully!\n" )
 
+  fmt.Printf( "Closing the server now.\n" )
   server.Close()
 }
 
