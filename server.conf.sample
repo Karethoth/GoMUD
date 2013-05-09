@@ -1,0 +1,9 @@
+[database]
+host     = localhost
+user     = user
+password = passw
+database = mud
+
+[server]
+port = 23
+
