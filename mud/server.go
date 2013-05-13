@@ -5,6 +5,7 @@ import (
   "net"
   "time"
   "bytes"
+  "container/list"
   "code.google.com/goconf"
 )
 
@@ -29,6 +30,9 @@ func (e MUDServerError) Error() string {
 type MUDServer struct {
   conn net.Listener
   config *conf.ConfigFile
+
+  clientList *list.List
+
 }
 
 
@@ -96,6 +100,7 @@ func (server *MUDServer) SetConfig( config *conf.ConfigFile ) error {
 }
 
 
+
 // Starts the server.
 func (server *MUDServer) Start() error {
   if( server.config == nil ) {
@@ -104,6 +109,9 @@ func (server *MUDServer) Start() error {
       "Server startup failed. No (working) config file provided.",
     }
   }
+
+
+  clientList := list.New()
 
 
   // Get the port that we should start listening.
@@ -120,6 +128,18 @@ func (server *MUDServer) Start() error {
     }
   }
 
+  for {
+    connection, err := server.conn.Accept()
+    if err != nil {
+      return MUDServerError {
+        time.Now(),
+        err.Error(),
+      }
+    } else {
+      go ClientHandler( connection, clientList, server )
+    }
+  }
+
   return nil
 }
 
@@ -128,5 +148,16 @@ func (server *MUDServer) Start() error {
 // Closes the server
 func (server *MUDServer) Close() {
   server.conn.Close()
+}
+
+
+
+// Handles the initialization of new clients
+func ClientHandler( conn net.Conn, clientList *list.List, server *MUDServer ) {
+  fmt.Printf( "New client connected\n" )
+  newClient := NewClient( conn, clientList )
+  go ClientSender( newClient )
+  go ClientReader( newClient, server )
+  clientList.PushBack( *newClient )
 }
 
