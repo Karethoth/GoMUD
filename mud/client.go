@@ -9,7 +9,6 @@ import (
 
 type Client struct {
   conn net.Conn
-  player *Player
 
   incoming chan string
   outgoing chan string
@@ -17,12 +16,35 @@ type Client struct {
   quit chan bool
 
   clientList *list.List
+
+  server *MUDServer
+
+  name string
+
+  gameState *GameState
 }
 
 
 
-func NewClient( conn net.Conn, clientList *list.List ) *Client {
-  return &Client{ conn, nil, make(chan string), make(chan string), make(chan bool), clientList }
+func NewClient( conn net.Conn, server *MUDServer, clientList *list.List ) *Client {
+  newClient := &Client { 
+    conn, 
+    make(chan string),
+    make(chan string),
+    make(chan bool),
+    clientList,
+    server,
+    "guest",
+    nil,
+  }
+
+  // Set game state
+  newClient.gameState = &GameState {
+    "WelcomeScreen",
+    "/welcomeScreen/start",
+  }
+
+  return newClient
 }
 
 
@@ -78,19 +100,27 @@ func ClientReader( client *Client, server *MUDServer ) {
       break
     }
 
-
     for i := 0; i < received; i++ {
 
       // If we have a line break handle the command
       // and reset lineBuffer
       if buffer[i] == '\n' {
-        command := string( lineBuffer[0:index+1] )
+        command := string( lineBuffer[0:index] )
         for x := 0; x < index+1; x++ {
           lineBuffer[x] = 0x00
         }
         index = 0
         
         fmt.Printf( "Command was: '%s'.\n", command )
+        if game, ok := server.games[client.gameState.gameName]; ok {
+          err := game.ExecuteCommand( client, command )
+          if err != nil {
+            fmt.Printf( "Received error from execute command: %s\n", err.Error() )
+          }
+        } else {
+          fmt.Printf( "game(%s) was not found\n", client.gameState.gameName )
+        }
+
         continue
       
       // Ignore \r
@@ -139,7 +169,7 @@ func ClientSender( client *Client ) {
       case <-client.quit:
         client.conn.Close()
         fmt.Println( "Client Disconnected" )
-        break
+        return
     }
   }
 }

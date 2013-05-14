@@ -33,6 +33,8 @@ type MUDServer struct {
 
   clientList *list.List
 
+  // map of different games
+  games map[string] Game
 }
 
 
@@ -113,6 +115,10 @@ func (server *MUDServer) Start() error {
 
   clientList := list.New()
 
+  // Initialize games
+  server.games = make( map[string] Game )
+  server.games["WelcomeScreen"] = InitWelcomeScreen()
+
 
   // Get the port that we should start listening.
   port, _ := server.config.GetInt( "server", "port" )
@@ -155,7 +161,7 @@ func (server *MUDServer) Close() {
 // Handles the initialization of new clients
 func ClientHandler( conn net.Conn, clientList *list.List, server *MUDServer ) {
   fmt.Printf( "New client connected\n" )
-  newClient := NewClient( conn, clientList )
+  newClient := NewClient( conn, server, clientList )
   go ClientSender( newClient )
   go ClientReader( newClient, server )
   clientList.PushBack( *newClient )
