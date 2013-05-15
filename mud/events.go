@@ -1,14 +1,13 @@
 package mud
 
 type Event interface {
-  Update() error
+  Update( *MUDServer ) error
   HasFinished()  bool
 }
 
 
 
 type FunctionEvent struct {
-  server   *MUDServer
   trigger   Trigger
   function  func( *MUDServer ) error
   triggered bool
@@ -18,13 +17,11 @@ type FunctionEvent struct {
 
 
 func NewFunctionEvent(
-    server   *MUDServer,
     trigger  Trigger,
     function func( *MUDServer ) error,
   ) *FunctionEvent {
 
   return &FunctionEvent{
-    server,
     trigger,
     function,
     false,
@@ -34,7 +31,7 @@ func NewFunctionEvent(
 
 
 
-func (event *FunctionEvent) Update() error {
+func (event *FunctionEvent) Update( server *MUDServer ) error {
   if event.finished {
     return nil
   }
@@ -52,7 +49,7 @@ func (event *FunctionEvent) Update() error {
     }
   } else {
     event.triggered = true
-    event.function( event.server )
+    event.function( server )
   }
 
   return nil

@@ -114,7 +114,7 @@ func (server *MUDServer) Start() error {
   }
 
 
-  clientList := list.New()
+  server.clientList = list.New()
 
   // Initialize games
   server.games = make( map[string] Game )
@@ -150,7 +150,7 @@ func (server *MUDServer) Start() error {
         err.Error(),
       }
     } else {
-      go ClientHandler( connection, clientList, server )
+      go ClientHandler( connection, server )
     }
   }
 
@@ -166,14 +166,26 @@ func (server *MUDServer) Close() {
 
 
 
+// Returns true if client is found from client list
+func (server *MUDServer) HasClient( client *Client ) bool {
+  for e := server.clientList.Front(); e != nil; e = e.Next() {
+    if client == e.Value.(*Client) {
+      return true
+    }
+  }
+  return false
+}
+
+
+
 // Handles the initialization of new clients
-func ClientHandler( conn net.Conn, clientList *list.List, server *MUDServer ) {
+func ClientHandler( conn net.Conn, server *MUDServer ) {
   addr := conn.RemoteAddr()
   fmt.Printf( "New client connected from %s\n", addr )
-  newClient := NewClient( conn, server, clientList )
+  newClient := NewClient( conn, server, server.clientList )
   go ClientSender( newClient )
   go ClientReader( newClient, server )
-  clientList.PushBack( *newClient )
+  server.clientList.PushBack( newClient )
 }
 
 
@@ -187,7 +199,7 @@ func EventHandler( server *MUDServer ) {
         continue
       }
 
-      e.Value.(Event).Update()
+      e.Value.(Event).Update( server )
     }
     time.Sleep( 100 *time.Millisecond )
   }

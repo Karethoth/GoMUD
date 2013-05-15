@@ -14,6 +14,7 @@ type Client struct {
   incoming chan string
   outgoing chan string
 
+  connected bool
   quit chan bool
 
   clientList *list.List
@@ -34,6 +35,7 @@ func NewClient( conn net.Conn, server *MUDServer, clientList *list.List ) *Clien
     conn, 
     make(chan string),
     make(chan string),
+    true,
     make(chan bool),
     clientList,
     server,
@@ -60,7 +62,7 @@ func NewClient( conn net.Conn, server *MUDServer, clientList *list.List ) *Clien
     )
     return nil
   }
-  server.events.PushBack( NewFunctionEvent( server, trigger, function ) )
+  server.events.PushBack( NewFunctionEvent( trigger, function ) )
 
   // Refresh active time
   newClient.RefreshActiveTime()
@@ -83,6 +85,7 @@ func (c *Client) Read( buffer []byte ) (bool, int) {
 
 func (c *Client) Close() {
   c.quit <- true
+  c.connected = false
   c.conn.Close()
   c.RemoveFromList()
 }
@@ -100,8 +103,8 @@ func (c *Client) Equal( other *Client ) bool {
 
 func (c *Client) RemoveFromList() {
   for entry := c.clientList.Front(); entry != nil; entry = entry.Next() {
-    client := entry.Value.(Client)
-    if c.Equal( &client ) {
+    client := entry.Value.(*Client)
+    if c.Equal( client ) {
       c.clientList.Remove( entry )
     }
   }
@@ -119,18 +122,23 @@ func (c *Client) RefreshActiveTime() {
   }
 
   trigger := NewTimeoutTrigger(
-    c.activeTime.Add( time.Duration(300)*time.Second ),
+    c.activeTime.Add( time.Duration(500)*time.Second ),
     triggerFunction,
   )
 
+  // Create function that's called when the timeout has triggered.
   eventFunction := func( server *MUDServer ) error {
+    if !c.connected || !server.HasClient( c ) {
+      return nil
+    }
+
     fmt.Printf( "%s timed out.\n", c.name )
     c.outgoing <- "\r\n\r\nYou have timed out. Have a nice day!\r\n"
     c.Close()
     return nil
   }
 
-  event := NewFunctionEvent( c.server, trigger, eventFunction )
+  event := NewFunctionEvent( trigger, eventFunction )
 
   // Push the event to the event list.
   c.server.events.PushBack( event )
