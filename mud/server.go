@@ -56,6 +56,7 @@ func (server *MUDServer) SetConfig( config *conf.ConfigFile ) error {
     { "database", "user", "string" },
     { "database", "password", "string" },
     { "database", "database", "string" },
+    { "users", "timeout", "int" },
   }
 
   // Create slice to contain errors for fields.

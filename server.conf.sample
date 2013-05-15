@@ -7,3 +7,5 @@ database = mud
 [server]
 port = 23
 
+[users]
+timeout = 300     # Seconds to timeout when idle. Set to zero to disable timeouts

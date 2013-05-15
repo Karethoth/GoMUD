@@ -116,13 +116,19 @@ func (c *Client) RefreshActiveTime() {
   // Update active time
   c.activeTime = time.Now()
 
+  timeoutSecondCount, err := c.server.config.GetInt( "users", "timeout" )
+  if timeoutSecondCount == 0 || err != nil {
+    return
+  }
+
+
   // Generate timeout event
   triggerFunction := func() time.Time {
     return c.activeTime
   }
 
   trigger := NewTimeoutTrigger(
-    c.activeTime.Add( time.Duration(500)*time.Second ),
+    c.activeTime.Add( time.Duration(timeoutSecondCount)*time.Second ),
     triggerFunction,
   )
 
