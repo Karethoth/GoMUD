@@ -66,5 +66,10 @@ func InitWelcomeScreen() WelcomeScreen {
 
 
 func SendMOTD( client *Client ) {
-  client.outgoing <- "Welcome!\r\nThis server isn't useful for anything, thus I recommend you to 'quit'.\r\n> "
+  message := fmt.Sprintf(
+               "%c[1mWelcome!%c[0m\r\nThis server isn't useful for anything, thus I recommend you to '%c[31mquit%c[0m'.\r\n> ",
+               0x1b, 0x1b, 0x1b, 0x1b,
+             )
+
+  client.outgoing <- message
 }

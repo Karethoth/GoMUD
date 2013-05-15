@@ -139,6 +139,10 @@ func ClientReader( client *Client, server *MUDServer ) {
       } else if buffer[i] == '\r' {
         continue
 
+      // Ignore DEL
+      } else if buffer[i] == 0x7F {
+        continue
+
       // Handle backspace
       } else if buffer[i] == 0x8 {
         if index <= 0 {
