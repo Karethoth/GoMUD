@@ -35,6 +35,7 @@ type MUDServer struct {
 
   // map of different games
   games map[string] Game
+  events           *list.List
 }
 
 
@@ -119,6 +120,9 @@ func (server *MUDServer) Start() error {
   server.games = make( map[string] Game )
   server.games["WelcomeScreen"] = InitWelcomeScreen()
 
+  // Create list for events
+  server.events = list.New()
+
 
   // Get the port that we should start listening.
   port, _ := server.config.GetInt( "server", "port" )
@@ -133,6 +137,10 @@ func (server *MUDServer) Start() error {
       err.Error(),
     }
   }
+
+
+  // Start the event handler
+  go EventHandler( server )
 
   for {
     connection, err := server.conn.Accept()
@@ -165,5 +173,22 @@ func ClientHandler( conn net.Conn, clientList *list.List, server *MUDServer ) {
   go ClientSender( newClient )
   go ClientReader( newClient, server )
   clientList.PushBack( *newClient )
+}
+
+
+
+// Handles the events of the server
+func EventHandler( server *MUDServer ) {
+  for {
+    for e := server.events.Front(); e != nil; e = e.Next() {
+      if e.Value.(Event).HasFinished() {
+        server.events.Remove( e )
+        continue
+      }
+
+      e.Value.(Event).Update()
+    }
+    time.Sleep( 100 *time.Millisecond )
+  }
 }
 

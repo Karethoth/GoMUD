@@ -22,16 +22,30 @@ func (game WelcomeScreen) GetAvailableCommands( client *Client ) *list.List {
 
 
 func (game WelcomeScreen) ExecuteCommand( client *Client, command string ) error {
+
+  // If client wants to quit
   if command == "quit" {
-    client.outgoing <- "Good bye!\r\n"
-    client.Close()
+    // Prepare the event
+    trigger := TimedTrigger{ time.Now(), false }
+    function := func ( server *MUDServer ) error {
+      client.outgoing <- "Good bye!\r\n"
+      client.Close()
+      return nil
+    }
+
+    // Add the event to list
+    client.server.events.PushBack( NewFunctionEvent( client.server, &trigger, function ) )
     return nil
   }
 
-  return MUDServerError {
-    time.Now(),
-    fmt.Sprintf( "Command '%s' is not a valid command.", command ),
+  trigger := TimedTrigger{ time.Now(), false }
+  function := func ( server *MUDServer ) error {
+    client.outgoing <- fmt.Sprintf( "Command '%s' is not a valid command.\r\n", command )
+    return nil
   }
+  client.server.events.PushBack( NewFunctionEvent( client.server, &trigger, function ) )
+
+  return nil
 }
 
 
