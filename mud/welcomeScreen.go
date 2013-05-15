@@ -35,15 +35,20 @@ func (game WelcomeScreen) ExecuteCommand( client *Client, command string ) error
 
     // Add the event to list
     client.server.events.PushBack( NewFunctionEvent( client.server, trigger, function ) )
-    return nil
-  }
 
-  trigger := NewTimedTrigger( time.Now() )
-  function := func ( server *MUDServer ) error {
-    client.outgoing <- fmt.Sprintf( "Command '%s' is not a valid command.\r\n", command )
-    return nil
+  // MOTD
+  } else if command == "motd" {
+    SendMOTD( client )
+
+  // No command found
+  } else {
+    trigger := NewTimedTrigger( time.Now() )
+    function := func ( server *MUDServer ) error {
+      client.outgoing <- fmt.Sprintf( "Command '%s' is not a valid command.\r\n> ", command )
+      return nil
+    }
+    client.server.events.PushBack( NewFunctionEvent( client.server, trigger, function ) )
   }
-  client.server.events.PushBack( NewFunctionEvent( client.server, trigger, function ) )
 
   return nil
 }
@@ -56,4 +61,10 @@ func InitWelcomeScreen() WelcomeScreen {
   }
 
   return welcomeScreen
+}
+
+
+
+func SendMOTD( client *Client ) {
+  client.outgoing <- "Welcome!\r\nThis server isn't useful for anything, thus I recommend you to 'quit'.\r\n> "
 }

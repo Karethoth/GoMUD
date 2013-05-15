@@ -3,6 +3,7 @@ package mud
 import (
   "fmt"
   "net"
+  "time"
   "container/list"
 )
 
@@ -43,6 +44,17 @@ func NewClient( conn net.Conn, server *MUDServer, clientList *list.List ) *Clien
     "WelcomeScreen",
     "/welcomeScreen/start",
   }
+
+  // Call the motd command on behalf of the player
+  trigger := NewTimedTrigger( time.Now() )
+  function := func( server *MUDServer ) error {
+    server.games[newClient.gameState.gameName].ExecuteCommand(
+      newClient,
+      "motd",
+    )
+    return nil
+  }
+  server.events.PushBack( NewFunctionEvent( server, trigger, function ) )
 
   return newClient
 }
