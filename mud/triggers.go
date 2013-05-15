@@ -61,7 +61,8 @@ type TimeoutTrigger struct {
 
 func NewTimeoutTrigger(
     timeoutTime time.Time,
-    GetNewTime  func() time.Time ) *TimeoutTrigger {
+    GetNewTime  func() time.Time,
+  ) *TimeoutTrigger {
 
 
   return &TimeoutTrigger{
