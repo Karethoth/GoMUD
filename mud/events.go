@@ -39,7 +39,14 @@ func (event *FunctionEvent) Update() error {
     return nil
   }
 
-  if !event.trigger.Triggered() {
+  triggered, finished := event.trigger.Triggered()
+
+  if finished {
+    event.finished = true
+    return nil
+  }
+
+  if !triggered {
     if event.triggered {
       event.finished = true
     }
