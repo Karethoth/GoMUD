@@ -168,7 +168,8 @@ func (server *MUDServer) Close() {
 
 // Handles the initialization of new clients
 func ClientHandler( conn net.Conn, clientList *list.List, server *MUDServer ) {
-  fmt.Printf( "New client connected\n" )
+  addr := conn.RemoteAddr()
+  fmt.Printf( "New client connected from %s\n", addr )
   newClient := NewClient( conn, server, clientList )
   go ClientSender( newClient )
   go ClientReader( newClient, server )

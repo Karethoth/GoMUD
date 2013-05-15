@@ -23,6 +23,8 @@ type Client struct {
   name string
 
   gameState *GameState
+
+  activeTime time.Time
 }
 
 
@@ -35,9 +37,13 @@ func NewClient( conn net.Conn, server *MUDServer, clientList *list.List ) *Clien
     make(chan bool),
     clientList,
     server,
-    "guest",
+    "",
     nil,
+    time.Now(),
   }
+
+  // Generate name for the quest
+  newClient.name = fmt.Sprintf( "Guest%s", conn.RemoteAddr() )
 
   // Set game state
   newClient.gameState = &GameState {
@@ -55,6 +61,9 @@ func NewClient( conn net.Conn, server *MUDServer, clientList *list.List ) *Clien
     return nil
   }
   server.events.PushBack( NewFunctionEvent( server, trigger, function ) )
+
+  // Refresh active time
+  newClient.RefreshActiveTime()
 
   return newClient
 }
@@ -100,6 +109,35 @@ func (c *Client) RemoveFromList() {
 
 
 
+func (c *Client) RefreshActiveTime() {
+  // Update active time
+  c.activeTime = time.Now()
+
+  // Generate timeout event
+  triggerFunction := func() time.Time {
+    return c.activeTime
+  }
+
+  trigger := NewTimeoutTrigger(
+    c.activeTime.Add( time.Duration(300)*time.Second ),
+    triggerFunction,
+  )
+
+  eventFunction := func( server *MUDServer ) error {
+    fmt.Printf( "%s timed out.\n", c.name )
+    c.outgoing <- "\r\n\r\nYou have timed out. Have a nice day!\r\n"
+    c.Close()
+    return nil
+  }
+
+  event := NewFunctionEvent( c.server, trigger, eventFunction )
+
+  // Push the event to the event list.
+  c.server.events.PushBack( event )
+}
+
+
+
 func ClientReader( client *Client, server *MUDServer ) {
   buffer := make( []byte, 2048 )
   lineBuffer := make( []byte, 2048 )
@@ -112,6 +150,8 @@ func ClientReader( client *Client, server *MUDServer ) {
       break
     }
 
+    client.RefreshActiveTime()
+
     for i := 0; i < received; i++ {
 
       // If we have a line break handle the command
@@ -123,7 +163,7 @@ func ClientReader( client *Client, server *MUDServer ) {
         }
         index = 0
         
-        fmt.Printf( "Command was: '%s'.\n", command )
+        fmt.Printf( "%s gave command '%s'.\n", client.name, command )
         if game, ok := server.games[client.gameState.gameName]; ok {
           err := game.ExecuteCommand( client, command )
           if err != nil {
@@ -184,7 +224,7 @@ func ClientSender( client *Client ) {
 
       case <-client.quit:
         client.conn.Close()
-        fmt.Println( "Client Disconnected" )
+        fmt.Printf( "%s disconnected.\n", client.name )
         return
     }
   }
