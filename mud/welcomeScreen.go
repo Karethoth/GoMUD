@@ -26,7 +26,7 @@ func (game WelcomeScreen) ExecuteCommand( client *Client, command string ) error
   // If client wants to quit
   if command == "quit" {
     // Prepare the event
-    trigger := TimedTrigger{ time.Now(), false }
+    trigger := NewTimedTrigger( time.Now() )
     function := func ( server *MUDServer ) error {
       client.outgoing <- "Good bye!\r\n"
       client.Close()
@@ -34,16 +34,16 @@ func (game WelcomeScreen) ExecuteCommand( client *Client, command string ) error
     }
 
     // Add the event to list
-    client.server.events.PushBack( NewFunctionEvent( client.server, &trigger, function ) )
+    client.server.events.PushBack( NewFunctionEvent( client.server, trigger, function ) )
     return nil
   }
 
-  trigger := TimedTrigger{ time.Now(), false }
+  trigger := NewTimedTrigger( time.Now() )
   function := func ( server *MUDServer ) error {
     client.outgoing <- fmt.Sprintf( "Command '%s' is not a valid command.\r\n", command )
     return nil
   }
-  client.server.events.PushBack( NewFunctionEvent( client.server, &trigger, function ) )
+  client.server.events.PushBack( NewFunctionEvent( client.server, trigger, function ) )
 
   return nil
 }

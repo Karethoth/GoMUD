@@ -18,9 +18,10 @@ type FunctionEvent struct {
 
 
 func NewFunctionEvent(
-      server   *MUDServer,
-      trigger  Trigger,
-      function func( *MUDServer ) error ) *FunctionEvent {
+    server   *MUDServer,
+    trigger  Trigger,
+    function func( *MUDServer ) error,
+  ) *FunctionEvent {
 
   return &FunctionEvent{
     server,

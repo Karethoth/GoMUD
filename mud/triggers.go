@@ -16,6 +16,15 @@ type TimedTrigger struct {
 
 
 
+func NewTimedTrigger( targetTime time.Time ) *TimedTrigger {
+  return &TimedTrigger {
+    targetTime,
+    false,
+  }
+}
+
+
+
 func (trigger *TimedTrigger) Triggered() bool {
   if trigger.triggered {
     return false
@@ -30,3 +39,4 @@ func (trigger *TimedTrigger) Triggered() bool {
 
   return false
 }
+
